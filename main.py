@@ -6,6 +6,7 @@ x = 19
 y = 19
 h = 60.0
 radius = 2
+chamfer_length = 1.5
 
 unit = 24
 
@@ -23,7 +24,7 @@ adj_y = adjust_to_half_unit(y, unit)
 
 
 def main() -> None:
-    box = build_box(adj_x, adj_y, h, radius)
+    box = build_box(adj_x, adj_y, h, radius, chamfer_length)
     size = box.bounding_box().size
     print(f"x={adj_x} y={adj_y} h={h}")
     print(f"box X×Y×Z = {size.X}×{size.Y}×{size.Z}")
