@@ -18,10 +18,12 @@ from build123d import (
     Edge,
     Face,
     GeomType,
+    Kind,
     Part,
     Plane,
     Polygon,
     Pos,
+    Rectangle,
     Side,
     Wire,
     chamfer,
@@ -128,8 +130,10 @@ def build_box(
     envelope = Pos(0, 0, bottom) * envelope
     box =  ((box + lip) & envelope).clean()
 
-    # Soften the edges of the lip's sloped top. Skip the edge on the open face
-    # and the short stretch of the tip over the back wall, which fails to fillet.
+    # Soften the edges of the lip's sloped top, before the lip is hollowed:
+    # afterwards the ridge sits on a wall too thin to fillet. Skip the edge on
+    # the open face and the short stretch of the tip over the back wall, which
+    # fails to fillet.
     slope = box.faces().filter_by(GeomType.PLANE).sort_by(Axis.Z)[-1]
     slope_edges = [
         edge
@@ -141,6 +145,44 @@ def build_box(
         )
     ]
     box = fillet(slope_edges, 0.3)
+
+    # Hollow out the lip, open on the center face and on the outer end face,
+    # leaving wall_thickness on the slope, the underside, the outer face and
+    # the corner. offset() on the solid with both faces as openings silently
+    # returns the lip unchanged, so the hollow is built from 2D profiles
+    # instead.
+    #
+    # The lip is split along the underside, carried on through the end wall,
+    # rather than at the flat bottom of the sketch. Shelling that flat bottom
+    # leaves a ledge at the end face.
+    past = 2  # How far the profiles run past the open faces.
+    under_slope = drop / (reach - wall_thickness)
+    cross = Plane.YZ * Polygon(
+        (y_end - reach, top),
+        (y_end + past, top + rise + past * rise / reach),
+        (y_end + past, top - (reach + past) * under_slope),
+        align=None,
+    )
+    cross = offset(cross, amount=-wall_thickness, kind=Kind.INTERSECTION)
+    along = extrude(Pos(-1, 0, 0) * cross, amount=width + 1, dir=(1, 0, 0))
+
+    plan = Pos(width - wall_thickness, y_end - wall_thickness) * Rectangle(
+        width - wall_thickness + 1, y_end + past, align=(Align.MAX, Align.MAX)
+    )
+    plan = fillet(
+        plan.vertices().group_by(Axis.X)[-1].group_by(Axis.Y)[-1],
+        radius - wall_thickness,
+    )
+    plan += Pos(-1, y_end - radius) * Rectangle(
+        width - radius + 1, radius + past, align=(Align.MIN, Align.MIN)
+    )
+    cross_bottom = cross.bounding_box().min.Z
+    around = extrude(
+        Pos(0, 0, cross_bottom - 1) * plan,
+        amount=cross.bounding_box().max.Z - cross_bottom + 2,
+    )
+
+    box = (box - (along & around)).clean()
 
     return box
 
