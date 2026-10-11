@@ -17,6 +17,9 @@ unit = 24
 adj_x = adjust_to_half_unit(x, unit)
 adj_y = adjust_to_half_unit(y, unit)
 
+box_x = adj_x - side_clearance
+box_y = adj_y - side_clearance
+
 wall_thickness = (
     0.6 if adj_x < 60 or adj_y < 60 else
     0.7 if adj_x < 120 or adj_y < 120 else
@@ -29,11 +32,10 @@ mag_bottom_thickness = 0.2
 mag_top_thickness = 1.4
 
 
-
 def main() -> None:
-    box = build_box( 
-        x=adj_x,
-        y=adj_y,
+    box = build_box(
+        x=box_x,
+        y=box_y,
         h=h,
         radius=radius,
         chamfer_length=chamfer_length,
