@@ -8,6 +8,8 @@ Solids are ordinary values. Combine them with:
     *   place, as in ``Pos(x, y, z) * shape``
 """
 
+import math
+
 from build123d import (
     Align,
     Axis,
@@ -16,6 +18,8 @@ from build123d import (
     Edge,
     Face,
     Part,
+    Plane,
+    Polygon,
     Pos,
     Side,
     Wire,
@@ -95,7 +99,33 @@ def build_box(
         and edge.bounding_box().max.X > 1e-6
     ]
 
-    box = fillet(inside_edges, 1)  
-    
+    box = fillet(inside_edges, 1)
+
+    # Lip on the +Y end, sketched on the center plane (Y, Z) and extruded
+    # across to the outer face.
+    y_end = y / 2
+    reach = 4
+    slope_length = 5.5
+    under_angle = 50
+    rise = math.sqrt(slope_length**2 - reach**2)
+    drop = (reach - wall_thickness) / math.tan(math.radians(under_angle))
+    sketch = Plane.YZ * Polygon(
+        (y_end, top + rise),
+        (y_end - reach, top),
+        (y_end - wall_thickness, top - drop),
+        (y_end, top - drop),
+        align=None,
+    )
+    lip = extrude(sketch, amount=width)
+
+    # Trim to the outer outline so the lip keeps the outer corner fillet.
+    # Built like the main box, not extruded from top_face: the extruded arc
+    # gives a cylinder with a reversed axis, which clean() won't merge with
+    # the main fillet, so the fillet would be split into two faces.
+    envelope = Box(width, y, h + rise, align=(Align.MIN, Align.CENTER, Align.MIN))
+    envelope = fillet(envelope.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], radius)
+    envelope = Pos(0, 0, bottom) * envelope
+    box =  ((box + lip) & envelope).clean()
+
     return box
 
