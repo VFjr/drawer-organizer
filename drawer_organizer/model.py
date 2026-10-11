@@ -29,6 +29,7 @@ from build123d import (
     chamfer,
     extrude,
     fillet,
+    mirror,
     offset,
 )
 
@@ -184,5 +185,6 @@ def build_box(
 
     box = (box - (along & around)).clean()
 
-    return box
+    # Mirror across the center face to make the full bin.
+    return (box + mirror(box, about=Plane.YZ)).clean()
 
