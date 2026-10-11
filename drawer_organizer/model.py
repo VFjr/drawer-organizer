@@ -74,9 +74,9 @@ def build_container(
     ]
     box = chamfer(bottom_edges, chamfer_length)
 
-    # magnet pocket
+    # magnet pocket, centered on the mirror plane so the mirror completes the circle
     pocket = Pos(
-        mag_hole_h / 2,
+        0,
         0,
         bottom + mag_bottom_thickness,
     ) * Cylinder(mag_hole_diameter / 2, mag_hole_h, align=(Align.CENTER, Align.CENTER, Align.MIN))
