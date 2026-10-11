@@ -1,12 +1,13 @@
 from ocp_viewer import show
 
 from drawer_organizer import build_container
+from drawer_organizer.measure import internal_dimensions
 from drawer_organizer.units import adjust_to_half_unit
 
 ## Editable parameters
 x = 19
 y = 19
-h = 60.0
+h = 50.0
 
 ## Non-editable parameters
 radius = 2
@@ -45,6 +46,8 @@ def main() -> None:
         mag_top_thickness=mag_top_thickness,
         wall_thickness=wall_thickness,
     )
+    inside = internal_dimensions(box)
+    print(f"internal x={inside['x']:.2f} y={inside['y']:.2f} h={inside['h']:.2f}")
     show(box)
 
 
