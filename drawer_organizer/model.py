@@ -34,7 +34,7 @@ from build123d import (
 )
 
 
-def build_box(
+def build_container(
     x: float,
     y: float,
     h: float,
@@ -186,5 +186,16 @@ def build_box(
     box = (box - (along & around)).clean()
 
     # Mirror across the center face to make the full bin.
-    return (box + mirror(box, about=Plane.YZ)).clean()
+    box = (box + mirror(box, about=Plane.YZ)).clean()
+
+    # Fillet the inner apex of the lip channel, where the hollow's slope and
+    # underside meet. Done after the mirror so it is one edge across both halves.
+    apex = cross.vertices().sort_by(Axis.Y)[0]
+    apex_edges = [
+        edge
+        for edge in box.edges()
+        if abs(edge.center().Y - apex.Y) < 1e-4
+        and abs(edge.center().Z - apex.Z) < 1e-4
+    ]
+    return fillet(apex_edges, 0.3)
 

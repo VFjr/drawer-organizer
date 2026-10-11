@@ -1,6 +1,6 @@
 from ocp_viewer import show
 
-from drawer_organizer import build_box
+from drawer_organizer import build_container
 from drawer_organizer.units import adjust_to_half_unit
 
 ## Editable parameters
@@ -33,7 +33,7 @@ mag_top_thickness = 1.4
 
 
 def main() -> None:
-    box = build_box(
+    box = build_container(
         x=box_x,
         y=box_y,
         h=h,
