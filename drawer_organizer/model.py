@@ -17,6 +17,7 @@ from build123d import (
     Cylinder,
     Edge,
     Face,
+    GeomType,
     Part,
     Plane,
     Polygon,
@@ -126,6 +127,20 @@ def build_box(
     envelope = fillet(envelope.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], radius)
     envelope = Pos(0, 0, bottom) * envelope
     box =  ((box + lip) & envelope).clean()
+
+    # Soften the edges of the lip's sloped top. Skip the edge on the open face
+    # and the short stretch of the tip over the back wall, which fails to fillet.
+    slope = box.faces().filter_by(GeomType.PLANE).sort_by(Axis.Z)[-1]
+    slope_edges = [
+        edge
+        for edge in slope.edges()
+        if edge.bounding_box().max.X > 1e-6
+        and not (
+            edge.bounding_box().max.Z <= top + 1e-6
+            and edge.bounding_box().min.X > 1e-6
+        )
+    ]
+    box = fillet(slope_edges, 0.3)
 
     return box
 
