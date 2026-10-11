@@ -221,3 +221,6 @@ __marimo__/
 
 # Generated STEP files
 output/
+
+# Personal container list; see containers.example.csv
+containers.csv

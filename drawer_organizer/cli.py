@@ -46,6 +46,8 @@ def _export(name: str, x: float, y: float, z: float, out: Path) -> FittedContain
     container = fit_container(x, y, z)
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"{_file_stem(name, container)}.step"
+    # Slicers such as Bambu Studio name the object after this label.
+    container.part.label = name
     export_step(container.part, path)
     _report(name, container, path)
     return container
