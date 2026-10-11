@@ -9,14 +9,16 @@ Parametric drawer organizer containers, built with [build123d](https://github.co
 One container:
 
 ```bash
-uv run python main.py size 19 100 50 --name pens [--show]
+uv run drawer-organizer size 19 100 50 --name pens [--show]
 ```
 
 Many containers from a CSV (`name,x,y,z`):
 
 ```bash
-uv run python main.py csv containers.csv [--out output] [--show]
+uv run drawer-organizer csv containers.csv [--out output] [--show]
 ```
+
+With the venv active (`source .venv/bin/activate`), drop the `uv run`.
 
 STEP files are written to `output/` as `<name>_<grid x>x<grid y>x<z>.step`. `--show` also sends the parts to the OCP viewer (start it with `uv run ocp-viewer`); CSV containers appear side by side as separate, named objects.
 

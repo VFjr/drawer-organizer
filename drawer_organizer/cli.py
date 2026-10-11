@@ -8,16 +8,24 @@ accepted for ``z``). ``x`` and ``y`` are the required inside sizes and ``z``
 is the outer height of the box, as for ``fit_container``.
 """
 
-import argparse
 import csv
 import re
 from pathlib import Path
+from typing import Annotated
 
+import typer
 from build123d import Pos, export_step
 
 from drawer_organizer.fit import FittedContainer, fit_container
 
 DEFAULT_OUT = Path("output")
+
+app = typer.Typer(
+    help="Fit drawer organizer containers and export them as STEP.",
+    no_args_is_help=True,
+)
+
+OutOption = Annotated[Path, typer.Option(help="Folder for the STEP files.")]
 
 
 def _file_stem(name: str, container: FittedContainer) -> str:
@@ -76,41 +84,40 @@ def _read_rows(csv_path: Path) -> list[tuple[str, float, float, float]]:
     return rows
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    commands = parser.add_subparsers(dest="command", required=True)
+@app.command()
+def size(
+    x: Annotated[float, typer.Argument(help="Required inside x.")],
+    y: Annotated[float, typer.Argument(help="Required inside y.")],
+    z: Annotated[float, typer.Argument(help="Outer height of the box.")],
+    name: Annotated[str, typer.Option(help="Name used for the STEP file.")] = "container",
+    out: OutOption = DEFAULT_OUT,
+    show: Annotated[bool, typer.Option(help="Also send it to the OCP viewer.")] = False,
+) -> None:
+    """One container from sizes given here."""
+    container = _export(name, x, y, z, out)
+    if show:
+        from ocp_viewer import show as show_in_viewer
 
-    size = commands.add_parser("size", help="one container from sizes given here")
-    size.add_argument("x", type=float, help="required inside x")
-    size.add_argument("y", type=float, help="required inside y")
-    size.add_argument("z", type=float, help="outer height of the box")
-    size.add_argument("--name", default="container")
-    size.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    size.add_argument("--show", action="store_true", help="also send it to the OCP viewer")
+        show_in_viewer(container.part)
 
-    batch = commands.add_parser("csv", help="every container listed in a CSV")
-    batch.add_argument("file", type=Path)
-    batch.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    batch.add_argument(
-        "--show", action="store_true", help="also send them to the OCP viewer, side by side"
-    )
 
-    args = parser.parse_args(argv)
-
-    if args.command == "size":
-        container = _export(args.name, args.x, args.y, args.z, args.out)
-        if args.show:
-            from ocp_viewer import show
-
-            show(container.part)
-        return
-
+@app.command("csv")
+def from_csv(
+    file: Annotated[
+        Path, typer.Argument(exists=True, dir_okay=False, help="CSV with name,x,y,z.")
+    ],
+    out: OutOption = DEFAULT_OUT,
+    show: Annotated[
+        bool, typer.Option(help="Also send them to the OCP viewer, side by side.")
+    ] = False,
+) -> None:
+    """Every container listed in a CSV."""
     shown = []
-    for name, x, y, z in _read_rows(args.file):
-        shown.append((name, _export(name, x, y, z, args.out)))
+    for name, x, y, z in _read_rows(file):
+        shown.append((name, _export(name, x, y, z, out)))
 
-    if args.show and shown:
-        from ocp_viewer import show
+    if show and shown:
+        from ocp_viewer import show as show_in_viewer
 
         # Side by side along X, so each can be hidden on its own in the viewer.
         gap = 10
@@ -120,4 +127,8 @@ def main(argv: list[str] | None = None) -> None:
             width = container.part.bounding_box().size.X
             placed.append(Pos(cursor + width / 2, 0, 0) * container.part)
             cursor += width + gap
-        show(*placed, names=[name for name, _ in shown])
+        show_in_viewer(*placed, names=[name for name, _ in shown])
+
+
+def main() -> None:
+    app()
