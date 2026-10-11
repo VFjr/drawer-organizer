@@ -83,5 +83,19 @@ def build_box(
     opening = [vertex for vertex in curve.vertices() if abs(vertex.X) < 1e-6]
     face = Face(Wire(list(curve.edges()) + [Edge.make_line(opening[0], opening[1])]))
     cavity = extrude(Pos(0, 0, floor_z - top) * face, amount=top - floor_z)
-    return box - cavity
+
+    box = box - cavity
+
+    # Fillet where the floor meets the walls. The lip on the open face stays sharp.
+    inside_edges = [
+        edge
+        for edge in box.edges()
+        if abs(edge.bounding_box().min.Z - floor_z) <= 1e-6
+        and abs(edge.bounding_box().max.Z - floor_z) <= 1e-6
+        and edge.bounding_box().max.X > 1e-6
+    ]
+
+    box = fillet(inside_edges, 1)  
+    
+    return box
 
