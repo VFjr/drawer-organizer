@@ -11,7 +11,7 @@ class StandardParameters:
     unit: float = 24
     mag_hole_diameter: float = 10.3
     mag_hole_h: float = 1.3
-    mag_bottom_thickness: float = 0.2
+    mag_bottom_thickness: float = 0.3
     mag_top_thickness: float = 1.4
 
     @property
